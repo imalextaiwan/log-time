@@ -3,31 +3,47 @@ name: build
 on:
   push:
     branches: [main]
-    tags: ['v*']
   pull_request:
+  workflow_dispatch:
 
 permissions:
   contents: write
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: bash
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-go@v5
+      - uses: actions/setup-python@v5
         with:
-          go-version: '1.24'
-      - run: go vet ./... && GOOS=windows go vet ./...
-      - run: go test ./...
-      - run: GOOS=windows GOARCH=amd64 go build -trimpath -buildvcs=false -ldflags="-s -w" -o dist/log-time.exe .
-      - run: cd dist && sha256sum log-time.exe > log-time.exe.sha256
+          python-version: '3.12'
+      - run: python -m unittest discover -s tests -v
+      - run: pip install pyinstaller==6.11.1
+      - run: pyinstaller --onefile --console --name log-time log_time.py
+      - name: Smoke test (path with spaces and Chinese, UTF-16 file)
+        run: |
+          mkdir -p "smoke/OneDrive - 測試/桌面"
+          cp examples/sample.log "smoke/OneDrive - 測試/桌面/t3 cpu.log"
+          python -c "open('smoke/u16.log','wb').write(open('examples/sample.log',encoding='utf-8').read().encode('utf-16'))"
+          out=$(./dist/log-time.exe "smoke/OneDrive - 測試/桌面/t3 cpu.log" smoke/u16.log)
+          echo "$out"
+          [ "$(echo "$out" | grep -c '00:07:19')" = 2 ]
+      - run: cd dist && sha256sum log-time.exe > log-time.exe.sha256 && cat log-time.exe.sha256
       - uses: actions/upload-artifact@v4
         with:
           name: log-time
-          path: dist/
-      - if: startsWith(github.ref, 'refs/tags/v')
+          path: dist/log-time.exe*
+      - id: ver
+        run: echo "version=$(python -c 'import log_time; print(log_time.__version__)')" >> "$GITHUB_OUTPUT"
+      - if: github.event_name != 'pull_request'
         uses: softprops/action-gh-release@v2
         with:
+          tag_name: v${{ steps.ver.outputs.version }}
+          name: log-time v${{ steps.ver.outputs.version }}
+          make_latest: true
           files: |
             dist/log-time.exe
             dist/log-time.exe.sha256
