@@ -18,7 +18,7 @@ import os
 import re
 import sys
 
-__version__ = '1.1.0'
+__version__ = '1.2.0'
 
 TIME_RE = re.compile(r'(?<!\d)(\d{1,2}):([0-5]\d):([0-5]\d)(?!\d)')
 
@@ -71,27 +71,36 @@ def decode(data):
         return data.decode('cp950', errors='replace')
 
 
-def report(name, text):
-    print(f'== {name}')
+def summarize(name, text):
+    """回傳一個檔的結果文字。"""
+    out = [f'== {name}']
     r = scan(text.splitlines())
     if r is None:
-        print('  找不到 HH:MM:SS 時間')
-        return
-    print(f'  開始：{fmt(r["first"] % 86400)}（第 {r["first_no"]} 行）')
-    print(f'  結束：{fmt(r["last"] % 86400)}（第 {r["last_no"]} 行）')
-    print(f'  總共：{fmt(r["last"] - r["first"])}')
+        out.append('  找不到 HH:MM:SS 時間')
+        return '\n'.join(out)
+    out.append(f'  開始：{fmt(r["first"] % 86400)}（第 {r["first_no"]} 行）')
+    out.append(f'  結束：{fmt(r["last"] % 86400)}（第 {r["last_no"]} 行）')
+    out.append(f'  總共：{fmt(r["last"] - r["first"])}')
     extra = f'，跨午夜 {r["wraps"]} 次' if r['wraps'] else ''
-    print(f'  （共 {r["count"]} 筆時間{extra}）')
+    out.append(f'  （共 {r["count"]} 筆時間{extra}）')
+    return '\n'.join(out)
 
 
-def report_file(path):
+def summarize_file(path):
     try:
         with open(path, 'rb') as f:
             data = f.read()
     except OSError as e:
-        print(f'== {path}\n  開不了檔案：{e.strerror or e}')
-        return
-    report(path, decode(data))
+        return f'== {path}\n  開不了檔案：{e.strerror or e}'
+    return summarize(path, decode(data))
+
+
+def report(name, text):
+    print(summarize(name, text))
+
+
+def report_file(path):
+    print(summarize_file(path))
 
 
 def parse_paths(line):

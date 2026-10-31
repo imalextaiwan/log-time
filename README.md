@@ -5,23 +5,31 @@
 
 從 LOG 裡抓 `HH:MM:SS` 時間（例如 `00:01:44`），報出**開始、結束、總共時間**。
 
-*English: a small Windows tool (Python, packaged with PyInstaller) that reads a log file, finds `HH:MM:SS` timestamps, and prints the start time, end time and total duration (handles midnight rollover). Drag a log file onto `log-time.exe`, or run `log-time.exe file.log`.*
+*English: a small Windows tool (Python, packaged with PyInstaller) that reads a log file, finds `HH:MM:SS` timestamps, and prints the start time, end time and total duration (handles midnight rollover). Drag log files into the `log-time.exe` window, or use `log-time-cli.exe file.log` from the command line.*
 
 ## 下載
-**[下載 log-time.exe](https://github.com/imalextaiwan/log-time/releases/latest/download/log-time.exe)**（Windows 10／11 64 位元，不用安裝）
+| 檔案 | 說明 |
+|---|---|
+| **[log-time.exe](https://github.com/imalextaiwan/log-time/releases/latest/download/log-time.exe)** | 視窗版：把 LOG 檔拖進視窗就顯示結果（一般用這個） |
+| [log-time-cli.exe](https://github.com/imalextaiwan/log-time/releases/latest/download/log-time-cli.exe) | 命令列版：在 cmd／PowerShell 裡用，或給批次檔呼叫 |
 
-其他版本與 SHA-256 在 [Releases](https://github.com/imalextaiwan/log-time/releases)。
+Windows 10／11 64 位元，不用安裝。其他版本與 SHA-256 在 [Releases](https://github.com/imalextaiwan/log-time/releases)。
 
 > 沒有數位簽章，第一次開啟若出現「Windows 已保護您的電腦」，按「其他資訊」→「仍要執行」。
 
-有 Python 3.8 以上也可以不用 EXE：`python log_time.py run.log`
+有 Python 3.8 以上也可以不用 EXE：`python log_time.py run.log`（命令列）、`python log_time_gui.py`（視窗，拖放需要 `pip install tkinterdnd2`）
 
 ## 用法
+**視窗版 `log-time.exe`**
+- 雙擊開啟，把 LOG 檔拖進視窗（可一次多個），或按「選擇檔案…」
+- 也可以把 LOG 檔直接拖到 `log-time.exe` 的圖示上
+- 「複製結果」可以貼到別處，「清除」清掉畫面
+
+**命令列版 `log-time-cli.exe`**
 | 方式 | 做法 |
 |---|---|
-| 拖放 | 把 LOG 檔拖到 `log-time.exe` 的圖示上，跑完按 Enter 關閉 |
-| 雙擊 | 開啟後輸入或拖入 LOG 檔路徑（可一次拖多個），按 Enter；算完可以接著輸入下一個，直接按 Enter 結束 |
-| 命令列 | `log-time.exe run.log`、`log-time.exe a.log b.log`、`type run.log \| log-time.exe` |
+| 命令列 | `log-time-cli.exe run.log`、`log-time-cli.exe a.log b.log`、`type run.log \| log-time-cli.exe` |
+| 雙擊 | 輸入 LOG 檔路徑按 Enter，可以一直算下一個，直接按 Enter 結束 |
 
 ## 輸出範例
 [`examples/sample.log`](examples/sample.log)：
@@ -32,7 +40,7 @@
 [00:09:03] 全部完成
 ```
 ```
-> log-time.exe examples\sample.log
+> log-time-cli.exe examples\sample.log
 == examples\sample.log
   開始：00:01:44（第 1 行）
   結束：00:09:03（第 4 行）
@@ -59,10 +67,11 @@
 需要 Python 3.8 以上，在 Windows 上：
 ```
 python -m unittest discover -s tests
-pip install pyinstaller
-pyinstaller --onefile --console --name log-time log_time.py
+pip install pyinstaller tkinterdnd2
+pyinstaller --onefile --windowed --name log-time --collect-all tkinterdnd2 log_time_gui.py
+pyinstaller --onefile --console --name log-time-cli log_time.py
 ```
-EXE 在 `dist\log-time.exe`。推送到 `main` 時，GitHub Actions 會在 Windows 上自動測試、編譯、實際執行一次，並依 `log_time.py` 的 `__version__` 發布到 Releases（含 `.sha256`）。
+EXE 在 `dist\`。推送到 `main` 時，GitHub Actions 會在 Windows 上自動測試、編譯、實際執行一次，並依 `log_time.py` 的 `__version__` 發布到 Releases（含 `SHA256SUMS.txt`）。
 
 ## 授權
 [MIT](LICENSE)
